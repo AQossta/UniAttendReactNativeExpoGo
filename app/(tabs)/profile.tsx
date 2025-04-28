@@ -12,19 +12,15 @@ import {
 import { useRouter } from 'expo-router';
 import { useColorScheme } from '../../src/hooks/useColorScheme';
 import { Colors } from '../../src/constants/Colors';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const { user, setIsAuthenticated } = useAuth();
 
   // Состояние для тёмного режима (в реальном приложении это может быть контекст)
   const [isDarkMode, setIsDarkMode] = useState(colorScheme === 'light');
-
-  // Пример данных пользователя
-  const user = {
-    email: 'qwrt@gmail.com',
-    language: 'English',
-  };
 
   const handleBack = () => {
     router.back();
@@ -38,7 +34,8 @@ export default function ProfileScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Yes',
-          onPress: () => {
+          onPress: async () => {
+            await setIsAuthenticated(false); // Clear auth state and AsyncStorage
             router.replace('/(main)/login');
           },
         },
@@ -95,10 +92,21 @@ export default function ProfileScreen() {
         My Profile
       </Text>
 
-      {/* Email */}
-      <Text style={[styles.email, { color: colors.textSecondary }]}>
-        {user.email}
-      </Text>
+      {/* Email and Name */}
+      {user ? (
+        <>
+          <Text style={[styles.email, { color: colors.textSecondary }]}>
+            {user.email}
+          </Text>
+          <Text style={[styles.name, { color: colors.textSecondary }]}>
+            {user.name}
+          </Text>
+        </>
+      ) : (
+        <Text style={[styles.email, { color: colors.textSecondary }]}>
+          Loading user data...
+        </Text>
+      )}
 
       {/* Список опций */}
       <View style={styles.optionsContainer}>
@@ -136,11 +144,6 @@ export default function ProfileScreen() {
             Language
           </Text>
           <View style={styles.languageContainer}>
-            <Text
-              style={[styles.languageText, { color: colors.textSecondary }]}
-            >
-              {user.language}
-            </Text>
             <Image
               source={require('../../assets/images/ic_button_next.svg')}
               style={[styles.arrow, { tintColor: colors.textTertiary }]}
@@ -212,6 +215,13 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 14, // 14dp
     fontWeight: '400',
+    textAlign: 'center',
+    marginHorizontal: 24, // 24dp
+    marginTop: 8, // 8dp
+  },
+  name: {
+    fontSize: 16, // 16dp
+    fontWeight: '500',
     textAlign: 'center',
     marginHorizontal: 24, // 24dp
     marginTop: 8, // 8dp

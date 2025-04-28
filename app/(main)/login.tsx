@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
-import { API_AUTH_SIGN_IN } from '../api/API'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { API_AUTH_SIGN_IN } from '../api/API';
 
 const COLORS = {
   grey_900: '#111827',
@@ -23,25 +25,26 @@ const COLORS = {
 };
 
 export default function LoginScreen() {
-  const { setIsAuthenticated, setUser } = useAuth(); 
+  const { setIsAuthenticated, setUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
   const handleLogin = async () => {
-    // Basic validation
+    // Валидация
     if (!email.includes('@')) {
       setEmailError(true);
       setServerError('');
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 5) {
       setServerError('Неверный пароль (минимум 6 символов)');
       setEmailError(false);
       return;
@@ -49,38 +52,24 @@ export default function LoginScreen() {
 
     setEmailError(false);
     setServerError('');
+    setIsLoading(true);
 
     try {
-      // Make API call to API_AUTH_SIGN_IN
-      const response = await fetch(API_AUTH_SIGN_IN, 
-        {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+      // Вызов API с помощью axios
+      const response = await axios.post(API_AUTH_SIGN_IN, {
+        email,
+        password,
       });
 
-      const data = await response.json();
+      const { body, message } = response.data;
 
-      if (!response.ok) {
-        // Handle API errors
-        throw new Error(data.message || 'Ошибка при входе');
-      }
-
-      // Extract response body
-      const { body, message } = data;
-
-      // Store access token and user data
+      // Сохранение токена и данных пользователя
       await AsyncStorage.setItem('accessToken', body.accessToken);
-      await AsyncStorage.setItem('user', JSON.stringify(body)); // Store user details
+      await AsyncStorage.setItem('user', JSON.stringify(body));
 
-      // Update AuthContext
-      setIsAuthenticated(true);
-      setUser({
+      // Обновление AuthContext
+      await setIsAuthenticated(true);
+      await setUser({
         id: body.id,
         email: body.email,
         name: body.name,
@@ -91,10 +80,15 @@ export default function LoginScreen() {
         groupName: body.groupName,
       });
 
-      // Redirect to profile tab
+      // Перенаправление на вкладку профиля
       router.replace('/(tabs)/profile');
-    } catch (error) {
-      setServerError('Ошибка сервера');
+    } catch (error: any) {
+      // Обработка ошибок axios
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Ошибка сервера';
+      setServerError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -117,6 +111,7 @@ export default function LoginScreen() {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            editable={!isLoading}
           />
         </View>
         {emailError && (
@@ -134,30 +129,37 @@ export default function LoginScreen() {
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
             autoCapitalize="none"
+            editable={!isLoading}
           />
         </View>
         <TouchableOpacity
           style={styles.btnShowPassword}
           onPress={toggleShowPassword}
+          disabled={isLoading}
         >
           <Text>{showPassword ? 'Скрыть' : 'Показать'}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.bottomContainer}>
         {serverError ? (
-          <Text style={styles.tvErrorTextPasswordAndServer}>
-            {serverError}
-          </Text>
+          <Text style={styles.tvErrorTextPasswordAndServer}>{serverError}</Text>
         ) : null}
-        <TouchableOpacity style={styles.btnLogin} onPress={handleLogin}>
-          <Text style={styles.btnLoginText}>Кіру</Text>
+        <TouchableOpacity
+          style={[styles.btnLogin, isLoading && { opacity: 0.7 }]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={COLORS.white} />
+          ) : (
+            <Text style={styles.btnLoginText}>Кіру</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,

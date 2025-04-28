@@ -1,15 +1,15 @@
 // Базовый URL API
 const API_BASE = 'http://192.168.1.7:8080/';
-
+// const API_BASE = 'http://localhost:8080/'
 // Префиксы для ролей
-const API_PATH_STUDENT = '/api/v1/student/';
-const API_PATH_TEACHER = '/api/v1/teacher/';
-const API_PATH_AUTH = '/api/v1/auth/';
-const API_PATH_PASSWORD = '/api/v1/password/';
+const API_PATH_STUDENT = 'api/v1/student/';
+const API_PATH_TEACHER = 'api/v1/teacher/';
+const API_PATH_AUTH = 'api/v1/auth/';
+const API_PATH_PASSWORD = 'api/v1/password/';
 
 // Аутентификация (Auth)
-const API_AUTH_SIGN_UP = `${API_BASE}${API_PATH_AUTH}sign-up`; // POST: Регистрация пользователя
-const API_AUTH_SIGN_IN = `${API_BASE}${API_PATH_AUTH}sign-in`; // POST: Вход пользователя
+const API_AUTH_SIGN_UP = API_BASE + API_PATH_AUTH + 'sign-up'; // POST: Регистрация пользователя
+const API_AUTH_SIGN_IN = API_BASE + API_PATH_AUTH + 'sign-in'; // POST: Вход пользователя
 const API_AUTH_LOGOUT = `${API_BASE}${API_PATH_AUTH}logout`; // POST: Выход пользователя (требуется параметр token)
 
 // Сброс пароля
