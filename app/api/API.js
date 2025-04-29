@@ -10,15 +10,15 @@ const API_PATH_PASSWORD = 'api/v1/password/';
 // Аутентификация (Auth)
 const API_AUTH_SIGN_UP = API_BASE + API_PATH_AUTH + 'sign-up'; // POST: Регистрация пользователя
 const API_AUTH_SIGN_IN = API_BASE + API_PATH_AUTH + 'sign-in'; // POST: Вход пользователя
-const API_AUTH_LOGOUT = `${API_BASE}${API_PATH_AUTH}logout`; // POST: Выход пользователя (требуется параметр token)
+const API_AUTH_LOGOUT = API_BASE + API_PATH_AUTH + 'logout'; // POST: Выход пользователя (требуется параметр token)
 
 // Сброс пароля
 const API_PASSWORD_EDIT_USER = `${API_BASE}${API_PATH_PASSWORD}editUser`; // PUT: Изменение пароля пользователя
 
 // Студент (Student)
 const API_STUDENT_ATTENDANCE_SCAN = `${API_BASE}${API_PATH_STUDENT}attendance/scan`; // POST: Сканирование QR-кода для отметки посещаемости
-const API_STUDENT_SCHEDULE_BY_ID = `${API_BASE}${API_PATH_STUDENT}schedule/`; // GET: Получение расписания по ID (добавить scheduleId в путь)
-const API_STUDENT_SCHEDULE_BY_GROUP = `${API_BASE}${API_PATH_STUDENT}schedule/group/`; // GET: Получение расписания по ID группы (добавить groupId в путь)
+const API_STUDENT_SCHEDULE_BY_ID = API_BASE + API_PATH_STUDENT + 'schedule/'; // GET: Получение расписания по ID (добавить scheduleId в путь)
+const API_STUDENT_SCHEDULE_BY_GROUP = API_BASE + API_PATH_STUDENT + 'schedule/group/'; // GET: Получение расписания по ID группы (добавить groupId в путь)
 
 // Преподаватель (Teacher)
 // Предметы (Subject)
@@ -29,7 +29,7 @@ const API_TEACHER_GROUP = `${API_BASE}${API_PATH_TEACHER}group`; // GET: Пол�
 
 // Расписание (Schedule)
 const API_TEACHER_SCHEDULE_CREATE = `${API_BASE}${API_PATH_TEACHER}schedule/create`; // POST: Создание расписания
-const API_TEACHER_SCHEDULE_BY_ID = `${API_BASE}${API_PATH_TEACHER}schedule/`; // GET: Получение статистики по ID расписания (добавить scheduleId в путь)
+const API_TEACHER_SCHEDULE_BY_ID = API_BASE + API_PATH_TEACHER + 'schedule/'; // GET: Получение статистики по ID расписания (добавить scheduleId в путь)
 const API_TEACHER_SCHEDULE_BY_LECTURER = `${API_BASE}${API_PATH_TEACHER}schedule/lecturer/`; // GET: Получение расписания по ID преподавателя (добавить lecturerId в путь)
 
 // QR-коды

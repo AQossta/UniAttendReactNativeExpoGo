@@ -10,6 +10,7 @@ interface User {
   roles: string[];
   groupId: number;
   groupName: string;
+  accessToken: string;
 }
 
 interface AuthContextType {

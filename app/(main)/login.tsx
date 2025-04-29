@@ -78,6 +78,7 @@ export default function LoginScreen() {
         roles: body.roles,
         groupId: body.groupId,
         groupName: body.groupName,
+        accessToken: body.accessToken,
       });
 
       // Перенаправление на вкладку профиля
@@ -118,7 +119,6 @@ export default function LoginScreen() {
           <Text style={styles.tvErrorTextEmail}>Қате формат</Text>
         )}
       </View>
-      <Text style={styles.textPassword}>Құпия сөз</Text>
       <View style={styles.passwordContainer}>
         <View style={styles.inputContainer}>
           <TextInput
@@ -131,14 +131,14 @@ export default function LoginScreen() {
             autoCapitalize="none"
             editable={!isLoading}
           />
+          <TouchableOpacity
+            style={styles.btnShowPassword}
+            onPress={toggleShowPassword}
+            disabled={isLoading}
+          >
+            <Text>{showPassword ? 'Скрыть' : 'Показать'}</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.btnShowPassword}
-          onPress={toggleShowPassword}
-          disabled={isLoading}
-        >
-          <Text>{showPassword ? 'Скрыть' : 'Показать'}</Text>
-        </TouchableOpacity>
       </View>
       <View style={styles.bottomContainer}>
         {serverError ? (
