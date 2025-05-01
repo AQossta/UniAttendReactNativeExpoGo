@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from '../../src/hooks/useColorScheme';
 import { useAuth } from '../../src/context/AuthContext';
-import * as Progress from 'react-native-progress'; // Импортируем react-native-progress
+import * as Progress from 'react-native-progress'; 
 
 interface ScheduleItem {
   id: number;
