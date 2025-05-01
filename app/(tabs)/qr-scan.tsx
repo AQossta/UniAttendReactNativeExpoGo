@@ -85,7 +85,7 @@ export default function QRScanScreen() {
       const { latitude, longitude } = location.coords;
 
       const response = await axios.post(
-        'http://192.168.1.7:8080/api/v1/student/attendance/scan',
+        'http://192.168.0.103:8080/api/v1/student/attendance/scan',
         {
           userId,
           scheduleId: parseInt(scheduleId, 10),

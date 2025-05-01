@@ -31,7 +31,7 @@ export default function QrGenerateScreen() {
     try {
       console.log('Отправка запроса на генерацию QR-кода:', new Date().toISOString());
       const response = await axios.post(
-        `http://192.168.1.7:8080/api/v1/teacher/qr/generate/${schedule.id}`,
+        `http://192.168.0.103:8080/api/v1/teacher/qr/generate/${schedule.id}`,
         {},
         {
           headers: {

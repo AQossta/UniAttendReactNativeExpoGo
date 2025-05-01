@@ -17,8 +17,8 @@ import { useAuth } from '../../src/context/AuthContext';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_STUDENT_SCHEDULE_BY_ID = "http://192.168.1.7:8080/api/v1/student/schedule/group/";
-const API_TEACHER_SCHEDULE_BY_ID = "http://192.168.1.7:8080/api/v1/teacher/schedule/lecturer/";
+const API_STUDENT_SCHEDULE_BY_ID = "http://192.168.0.103:8080/api/v1/student/schedule/group/";
+const API_TEACHER_SCHEDULE_BY_ID = "http://192.168.0.103:8080/api/v1/teacher/schedule/lecturer/";
 
 interface ScheduleItem {
   id: number;

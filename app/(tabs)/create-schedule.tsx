@@ -18,9 +18,9 @@ import axios from 'axios';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_TEACHER_SUBJECTS = "http://192.168.1.7:8080/api/v1/teacher/subject";
-const API_CREATE_SCHEDULE = "http://192.168.1.7:8080/api/v1/teacher/schedule/create";
-const API_GROUPS = "http://192.168.1.7:8080/api/v1/teacher/group"; 
+const API_TEACHER_SUBJECTS = "http://192.168.0.103:8080/api/v1/teacher/subject";
+const API_CREATE_SCHEDULE = "http://192.168.0.103:8080/api/v1/teacher/schedule/create";
+const API_GROUPS = "http://192.168.0.103:8080/api/v1/teacher/group"; 
 
 interface Subject {
   id: number;
