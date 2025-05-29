@@ -32,6 +32,7 @@ interface Student {
   email: string;
   phoneNumber: string;
   attend: boolean;
+  attendanceDuration: number; // Добавлено поле для времени участия
 }
 
 interface AttendanceStats {
@@ -53,19 +54,19 @@ export default function StatsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Parse schedule data
+  // Парсинг данных расписания
   let scheduleItem: ScheduleItem | null = null;
   try {
     scheduleItem = scheduleData ? JSON.parse(scheduleData as string) : null;
   } catch (e) {
-    console.error('Error parsing scheduleData:', e);
-    setError('Invalid schedule data');
+    console.error('Ошибка парсинга scheduleData:', e);
+    setError('Неверные данные расписания');
     setLoading(false);
   }
 
   useEffect(() => {
     if (!scheduleItem || !accessToken) {
-      setError('User or schedule data missing');
+      setError('Отсутствуют данные пользователя или расписания');
       setLoading(false);
       return;
     }
@@ -85,15 +86,15 @@ export default function StatsScreen() {
         setStats(response.data.body);
         setError(null);
       } catch (err) {
-        console.error('Error fetching statistics:', err);
-        setError('Failed to load statistics');
+        console.error('Ошибка загрузки статистики:', err);
+        setError('Не удалось загрузить статистику');
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
-  }, [scheduleItem?.id, accessToken]); // Use scheduleItem.id instead of entire object
+  }, [scheduleItem?.id, accessToken]);
 
   const formatTime = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
@@ -132,7 +133,7 @@ export default function StatsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.textPrimary} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Loading statistics...
+            Загрузка статистики...
           </Text>
         </View>
       </SafeAreaView>
@@ -144,13 +145,13 @@ export default function StatsScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
           <Text style={[styles.errorText, { color: colors.error }]}>
-            Schedule data missing
+            Отсутствуют данные расписания
           </Text>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.accent }]}
             onPress={handleBackPress}
           >
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>Назад</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -161,13 +162,13 @@ export default function StatsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Statistics: {stats?.scheduleDTO.subject || 'N/A'}
+          Статистика: {stats?.scheduleDTO.subject || 'Н/Д'}
         </Text>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: colors.accent }]}
           onPress={handleBackPress}
         >
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>Назад</Text>
         </TouchableOpacity>
       </View>
 
@@ -180,50 +181,50 @@ export default function StatsScreen() {
             style={[styles.backButton, { backgroundColor: colors.accent }]}
             onPress={handleBackPress}
           >
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>Назад</Text>
           </TouchableOpacity>
         </View>
       ) : stats ? (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Lesson Information
+              Информация о занятии
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Subject: {stats.scheduleDTO.subject}
+              Предмет: {stats.scheduleDTO.subject}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Time: {formatTime(stats.scheduleDTO.startTime, stats.scheduleDTO.endTime)}
+              Время: {formatTime(stats.scheduleDTO.startTime, stats.scheduleDTO.endTime)}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Group: {stats.scheduleDTO.groupName}
+              Группа: {stats.scheduleDTO.groupName}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Teacher: {stats.scheduleDTO.teacherName}
+              Преподаватель: {stats.scheduleDTO.teacherName}
             </Text>
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Attendance Statistics
+              Статистика посещаемости
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Total Students: {stats.totalCount}
+              Всего студентов: {stats.totalCount}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Present: {stats.presentCount}
+              Присутствовало: {stats.presentCount}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Percentage: {stats.statistic}%
+              Процент: {stats.statistic}%
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Message: {stats.message}
+              Сообщение: {stats.message}
             </Text>
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Attendance Percentage
+              Процент посещаемости
             </Text>
             <View style={styles.chartContainer}>
               <View style={styles.pieChartContainer}>
@@ -247,7 +248,7 @@ export default function StatsScreen() {
                     style={[styles.legendColor, { backgroundColor: colors.attended }]}
                   />
                   <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-                    Attended: {attendancePercentage.attended}%
+                    Присутствовало: {attendancePercentage.attended}%
                   </Text>
                 </View>
                 <View style={styles.legendItem}>
@@ -255,7 +256,7 @@ export default function StatsScreen() {
                     style={[styles.legendColor, { backgroundColor: colors.notAttended }]}
                   />
                   <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-                    Absent: {attendancePercentage.notAttended}%
+                    Отсутствовало: {attendancePercentage.notAttended}%
                   </Text>
                 </View>
               </View>
@@ -264,7 +265,7 @@ export default function StatsScreen() {
 
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Student List
+              Список студентов
             </Text>
             {stats.studentDTO.map((student) => (
               <View key={student.id} style={styles.studentItem}>
@@ -283,8 +284,13 @@ export default function StatsScreen() {
                     { color: student.attend ? colors.attended : colors.notAttended },
                   ]}
                 >
-                  {student.attend ? 'Present' : 'Absent'}
+                  {student.attend ? 'Присутствовал' : 'Отсутствовал'}
                 </Text>
+                {student.attend && (
+                  <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                    Время участия: {student.attendanceDuration} мин
+                  </Text>
+                )}
               </View>
             ))}
           </View>
@@ -292,13 +298,13 @@ export default function StatsScreen() {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            No statistics available
+            Статистика недоступна
           </Text>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.accent }]}
             onPress={handleBackPress}
           >
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>Назад</Text>
           </TouchableOpacity>
         </View>
       )}
