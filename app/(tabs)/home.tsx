@@ -16,9 +16,10 @@ import { useColorScheme } from '../../src/hooks/useColorScheme';
 import { useAuth } from '../../src/context/AuthContext';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE } from '../api/API';
 
-const API_STUDENT_SCHEDULE_BY_ID = "http://192.168.0.103:8080/api/v1/student/schedule/group/";
-const API_TEACHER_SCHEDULE_BY_ID = "http://192.168.0.103:8080/api/v1/teacher/schedule/lecturer/";
+const API_STUDENT_SCHEDULE_BY_ID = API_BASE+"api/v1/student/schedule/group/";
+const API_TEACHER_SCHEDULE_BY_ID = API_BASE+"api/v1/teacher/schedule/lecturer/";
 
 interface ScheduleItem {
   id: number;

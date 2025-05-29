@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import QRCode from 'react-native-qrcode-svg';
 import axios from 'axios';
 import { useAuth } from '../../src/context/AuthContext';
+import { API_BASE } from '../api/API';
 
 export default function QrGenerateScreen() {
   const { scheduleData } = useLocalSearchParams();
@@ -22,33 +23,36 @@ export default function QrGenerateScreen() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const generateQRCode = async () => {
-    if (!schedule || !accessToken) {
-      setError('Недостаточно данных для генерации QR-кода');
-      setLoading(false);
-      return;
-    }
+  if (!schedule || !accessToken) {
+    setError('Недостаточно данных для генерации QR-кода');
+    setLoading(false);
+    return;
+  }
 
-    try {
-      console.log('Отправка запроса на генерацию QR-кода:', new Date().toISOString());
-      const response = await axios.post(
-        `http://192.168.0.103:8080/api/v1/teacher/qr/generate/${schedule.id}`,
-        {},
-        {
-          headers: {
-            'Auth-token': accessToken,
-          },
-        }
-      );
+  try {
+    console.log('Отправка запроса на генерацию QR-кода:', new Date().toISOString());
 
-      setQrCodeData(response.data.body.qrCode);
-      setError(null);
-    } catch (err) {
-      console.error('Ошибка генерации QR-кода:', err);
-      setError('Не удалось сгенерировать QR-код');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const response = await axios.post(
+      `${API_BASE}api/v1/teacher/qr/generate/${schedule.id}`, // Исправлена строка
+      {},
+      {
+        headers: {
+          'Auth-token': accessToken,
+        },
+      }
+    );
+
+    // Предполагаем, что сервер возвращает qrCode как строку или Base64
+    setQrCodeData(response.data.body.qrCode);
+    setError(null);
+  } catch (err) {
+    console.error('Ошибка генерации QR-кода:', err);
+    setError('Не удалось сгенерировать QR-код');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     if (!isRunning) {
@@ -88,12 +92,22 @@ export default function QrGenerateScreen() {
     setIsRunning(true);
   };
 
-  const formatTime = (startTime: string, endTime: string) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const format = (date: Date) =>
-      `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    return `${format(start)}–${format(end)}`;
+const formatTime = (startTime: string, endTime: string) => {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  const format = (date: Date) =>
+    `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+  return `${format(start)}–${format(end)}`;
+};
+
+
+  // Проверяем, является ли qrCodeData Base64, и извлекаем данные, если нужно
+  const getQrCodeValue = () => {
+    if (!qrCodeData) return null;
+    // Если qrCodeData — это Base64 (например, начинается с "data:image/png;base64,"), используем его напрямую
+    return qrCodeData.startsWith('data:image') ? qrCodeData : qrCodeData;
   };
 
   return (
@@ -119,7 +133,7 @@ export default function QrGenerateScreen() {
             <View style={styles.qrContainer}>
               {qrCodeData && (
                 <QRCode
-                  value={qrCodeData}
+                  value={getQrCodeValue()} // Используем обработанную строку
                   size={220}
                   color="#111827"
                   backgroundColor="transparent"
@@ -158,6 +172,7 @@ export default function QrGenerateScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Стили остаются прежними
   container: {
     flex: 1,
     paddingHorizontal: 20,

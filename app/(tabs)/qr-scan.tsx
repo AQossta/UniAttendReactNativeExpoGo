@@ -15,6 +15,7 @@ import { Colors } from '../../src/constants/Colors';
 import axios from 'axios';
 import { useAuth } from '../../src/context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_BASE } from '../api/API';
 
 export default function QRScanScreen() {
   const colorScheme = useColorScheme();
@@ -85,11 +86,11 @@ export default function QRScanScreen() {
       const { latitude, longitude } = location.coords;
 
       const response = await axios.post(
-        'http://192.168.0.103:8080/api/v1/student/attendance/scan',
+        API_BASE+'api/v1/student/attendance/scan',
         {
           userId,
           scheduleId: parseInt(scheduleId, 10),
-          scanType: 'QR',
+          scanType: 'IN',
           latitude,
           longitude,
         },
@@ -110,7 +111,7 @@ export default function QRScanScreen() {
     } catch (error: any) {
       console.error('Ошибка при сканировании посещения:', error);
       const errorMsg =
-        error.response?.data?.message || 'Не удалось отметить посещение';
+        error.response?.data?.message;
       setErrorMessage(errorMsg);
       setScannedData(null);
     } finally {
