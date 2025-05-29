@@ -32,6 +32,8 @@ export default function QRScanScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scanLineAnim] = useState(new Animated.Value(0));
   const [lastScanTime, setLastScanTime] = useState<number>(0);
+  const [showConfirmation, setShowConfirmation] = useState(false); // Для экрана подтверждения
+  const [selectedScanType, setSelectedScanType] = useState<'IN' | 'OUT' | null>(null); // Тип сканирования
 
   useEffect(() => {
     if (!permission) {
@@ -63,81 +65,103 @@ export default function QRScanScreen() {
     router.back();
   };
 
-  const scanAttendance = useCallback(async (scheduleId: string) => {
-    if (!accessToken || !userId) {
-      setErrorMessage('Требуется авторизация');
-      setScannedData(null);
-      return;
-    }
+  const scanAttendance = useCallback(
+    async (scheduleId: string, scanType: 'IN' | 'OUT') => {
+      if (!accessToken || !userId) {
+        setErrorMessage('Требуется авторизация');
+        setScannedData(null);
+        setShowConfirmation(false);
+        return;
+      }
 
-    if (!locationPermission?.granted) {
-      setErrorMessage('Требуется разрешение на доступ к геолокации');
-      setScannedData(null);
-      return;
-    }
+      if (!locationPermission?.granted) {
+        setErrorMessage('Требуется разрешение на доступ к геолокации');
+        setScannedData(null);
+        setShowConfirmation(false);
+        return;
+      }
 
-    setLoading(true);
-    setErrorMessage(null);
-
-    try {
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      const { latitude, longitude } = location.coords;
-
-      const response = await axios.post(
-        API_BASE+'api/v1/student/attendance/scan',
-        {
-          userId,
-          scheduleId: parseInt(scheduleId, 10),
-          scanType: 'IN',
-          latitude,
-          longitude,
-        },
-        {
-          headers: {
-            'Auth-token': accessToken,
-          },
-          timeout: 5000,
-        }
-      );
-
+      setLoading(true);
       setErrorMessage(null);
-      setScannedData(null);
-      setLoading(false);
 
-      setErrorMessage(response.data.message || 'Посещение отмечено успешно');
-      setTimeout(() => setErrorMessage(null), 3000);
-    } catch (error: any) {
-      console.error('Ошибка при сканировании посещения:', error);
-      const errorMsg =
-        error.response?.data?.message;
-      setErrorMessage(errorMsg);
-      setScannedData(null);
-    } finally {
-      setLoading(false);
+      try {
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        const { latitude, longitude } = location.coords;
+
+        const response = await axios.post(
+          `${API_BASE}api/v1/student/attendance/scan`,
+          {
+            userId,
+            scheduleId: parseInt(scheduleId, 10),
+            scanType,
+            latitude,
+            longitude,
+          },
+          {
+            headers: {
+              'Auth-token': accessToken,
+            },
+            timeout: 5000,
+          }
+        );
+
+        setErrorMessage(response.data.message || 'Посещение отмечено успешно');
+        setScannedData(null);
+        setShowConfirmation(false);
+        setSelectedScanType(null);
+        setTimeout(() => setErrorMessage(null), 3000);
+      } catch (error: any) {
+        console.error('Ошибка при сканировании посещения:', error);
+        const errorMsg = error.response?.data?.message || 'Ошибка при сканировании';
+        setErrorMessage(errorMsg);
+        setScannedData(null);
+        setShowConfirmation(false);
+        setSelectedScanType(null);
+        setTimeout(() => setErrorMessage(null), 3000);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [accessToken, userId, locationPermission]
+  );
+
+  const handleBarCodeScanned = useCallback(
+    ({ data }: { type: string; data: string }) => {
+      const currentTime = Date.now();
+      if (currentTime - lastScanTime < 2000) {
+        return;
+      }
+
+      setLastScanTime(currentTime);
+
+      const scheduleId = data.trim();
+      if (!/^\d+$/.test(scheduleId)) {
+        setErrorMessage('Недопустимый формат QR-кода');
+        setScannedData(null);
+        setTimeout(() => setErrorMessage(null), 3000);
+        return;
+      }
+
+      setScannedData(scheduleId);
+      setShowConfirmation(true); // Показываем экран подтверждения
+    },
+    [lastScanTime]
+  );
+
+  const handleConfirmScan = (scanType: 'IN' | 'OUT') => {
+    if (scannedData) {
+      setSelectedScanType(scanType);
+      scanAttendance(scannedData, scanType);
     }
-  }, [accessToken, userId, locationPermission]);
+  };
 
-  const handleBarCodeScanned = useCallback(({ data }: { type: string; data: string }) => {
-    const currentTime = Date.now();
-    if (currentTime - lastScanTime < 2000) {
-      return;
-    }
-
-    setLastScanTime(currentTime);
-
-    const scheduleId = data.trim();
-    if (!/^\d+$/.test(scheduleId)) {
-      setErrorMessage('Недопустимый формат QR-кода');
-      setScannedData(null);
-      setTimeout(() => setErrorMessage(null), 3000);
-      return;
-    }
-
-    setScannedData(scheduleId);
-    scanAttendance(scheduleId);
-  }, [lastScanTime, scanAttendance]);
+  const handleCancelConfirmation = () => {
+    setScannedData(null);
+    setShowConfirmation(false);
+    setSelectedScanType(null);
+  };
 
   const toggleCameraType = () => {
     setType((current) => (current === 'back' ? 'front' : 'back'));
@@ -193,6 +217,47 @@ export default function QRScanScreen() {
         >
           <Text style={styles.toggleButtonText}>Предоставить разрешение</Text>
         </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (showConfirmation) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.toolbar, { backgroundColor: colors.toolbarBackground }]}>
+          <TouchableOpacity onPress={handleCancelConfirmation}>
+            <Text style={[styles.toolbarText, { color: colors.textPrimary }]}>Отмена</Text>
+          </TouchableOpacity>
+          <Text style={[styles.toolbarTitle, { color: colors.textPrimary }]}>
+            Подтверждение
+          </Text>
+          <View style={styles.toolbarSpacer} />
+        </View>
+
+        <View style={styles.confirmationContainer}>
+          <Text style={[styles.confirmationText, { color: colors.textPrimary }]}>
+            Выберите тип сканирования для занятия #{scannedData}
+          </Text>
+          <View style={styles.confirmationButtons}>
+            <TouchableOpacity
+              style={[styles.confirmButton, { backgroundColor: colors.accent }]}
+              onPress={() => handleConfirmScan('IN')}
+              disabled={loading}
+            >
+              <Text style={styles.confirmButtonText}>Приход (IN)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.confirmButton, { backgroundColor: colors.accent }]}
+              onPress={() => handleConfirmScan('OUT')}
+              disabled={loading}
+            >
+              <Text style={styles.confirmButtonText}>Уход (OUT)</Text>
+            </TouchableOpacity>
+          </View>
+          {loading && (
+            <ActivityIndicator size="large" color={colors.textPrimary} style={styles.loader} />
+          )}
+        </View>
       </SafeAreaView>
     );
   }
@@ -460,5 +525,38 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginVertical: 20,
+  },
+  confirmationContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  confirmationText: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  confirmationButtons: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 24,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
