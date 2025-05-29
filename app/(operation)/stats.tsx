@@ -26,13 +26,21 @@ interface ScheduleItem {
   groupName: string;
 }
 
+interface Student {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  attend: boolean;
+}
+
 interface AttendanceStats {
-  scheduleId: number;
-  subject: string;
+  scheduleDTO: ScheduleItem;
   totalCount: number;
   presentCount: number;
   statistic: number;
   message: string;
+  studentDTO: Student[];
 }
 
 export default function StatsScreen() {
@@ -45,28 +53,28 @@ export default function StatsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Парсим данные расписания
-  let item: ScheduleItem | null = null;
+  // Parse schedule data
+  let scheduleItem: ScheduleItem | null = null;
   try {
-    item = scheduleData ? JSON.parse(scheduleData as string) : null;
+    scheduleItem = scheduleData ? JSON.parse(scheduleData as string) : null;
   } catch (e) {
-    console.error('Ошибка парсинга scheduleData:', e);
-    setError('Некорректные данные расписания');
+    console.error('Error parsing scheduleData:', e);
+    setError('Invalid schedule data');
     setLoading(false);
   }
 
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!item || !accessToken) {
-        setError('Данные пользователя или расписания отсутствуют');
-        setLoading(false);
-        return;
-      }
+    if (!scheduleItem || !accessToken) {
+      setError('User or schedule data missing');
+      setLoading(false);
+      return;
+    }
 
+    const fetchStats = async () => {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${API_BASE}api/v1/teacher/schedule/${item.id}`,
+          `${API_BASE}/api/v1/teacher/schedule/${scheduleItem.id}`,
           {
             headers: {
               'Auth-token': accessToken,
@@ -74,26 +82,18 @@ export default function StatsScreen() {
           }
         );
 
-        const { body } = response.data;
-        setStats({
-          scheduleId: item.id,
-          subject: item.subject,
-          totalCount: body.totalCount,
-          presentCount: body.presentCount,
-          statistic: body.statistic,
-          message: body.message,
-        });
+        setStats(response.data.body);
         setError(null);
       } catch (err) {
-        console.error('Ошибка при загрузке статистики:', err);
-        setError('Не удалось загрузить статистику');
+        console.error('Error fetching statistics:', err);
+        setError('Failed to load statistics');
       } finally {
         setLoading(false);
       }
     };
 
     fetchStats();
-  }, [item, accessToken]);
+  }, [scheduleItem?.id, accessToken]); // Use scheduleItem.id instead of entire object
 
   const formatTime = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
@@ -132,25 +132,25 @@ export default function StatsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.textPrimary} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
-            Загрузка статистики...
+            Loading statistics...
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  if (!item) {
+  if (!scheduleItem) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
           <Text style={[styles.errorText, { color: colors.error }]}>
-            Данные расписания отсутствуют
+            Schedule data missing
           </Text>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.accent }]}
             onPress={handleBackPress}
           >
-            <Text style={styles.backButtonText}>Вернуться</Text>
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -161,13 +161,13 @@ export default function StatsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Статистика: {item.subject}
+          Statistics: {stats?.scheduleDTO.subject || 'N/A'}
         </Text>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: colors.accent }]}
           onPress={handleBackPress}
         >
-          <Text style={styles.backButtonText}>Назад</Text>
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
 
@@ -180,50 +180,50 @@ export default function StatsScreen() {
             style={[styles.backButton, { backgroundColor: colors.accent }]}
             onPress={handleBackPress}
           >
-            <Text style={styles.backButtonText}>Вернуться</Text>
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
       ) : stats ? (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Информация о занятии
+              Lesson Information
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Предмет: {item.subject}
+              Subject: {stats.scheduleDTO.subject}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Время: {formatTime(item.startTime, item.endTime)}
+              Time: {formatTime(stats.scheduleDTO.startTime, stats.scheduleDTO.endTime)}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Группа: {item.groupName}
+              Group: {stats.scheduleDTO.groupName}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Преподаватель: {item.teacherName}
+              Teacher: {stats.scheduleDTO.teacherName}
             </Text>
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Общая статистика
+              Attendance Statistics
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Всего студентов: {stats.totalCount}
+              Total Students: {stats.totalCount}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Присутствует: {stats.presentCount}
+              Present: {stats.presentCount}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Статистика: {stats.statistic}%
+              Percentage: {stats.statistic}%
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Сообщение: {stats.message}
+              Message: {stats.message}
             </Text>
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Процент посещаемости
+              Attendance Percentage
             </Text>
             <View style={styles.chartContainer}>
               <View style={styles.pieChartContainer}>
@@ -247,7 +247,7 @@ export default function StatsScreen() {
                     style={[styles.legendColor, { backgroundColor: colors.attended }]}
                   />
                   <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-                    Присутствовали: {attendancePercentage.attended}%
+                    Attended: {attendancePercentage.attended}%
                   </Text>
                 </View>
                 <View style={styles.legendItem}>
@@ -255,23 +255,50 @@ export default function StatsScreen() {
                     style={[styles.legendColor, { backgroundColor: colors.notAttended }]}
                   />
                   <Text style={[styles.legendText, { color: colors.textSecondary }]}>
-                    Отсутствовали: {attendancePercentage.notAttended}%
+                    Absent: {attendancePercentage.notAttended}%
                   </Text>
                 </View>
               </View>
             </View>
           </View>
+
+          <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+              Student List
+            </Text>
+            {stats.studentDTO.map((student) => (
+              <View key={student.id} style={styles.studentItem}>
+                <Text style={[styles.studentText, { color: colors.textPrimary }]}>
+                  {student.name}
+                </Text>
+                <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                  {student.email}
+                </Text>
+                <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                  {student.phoneNumber}
+                </Text>
+                <Text
+                  style={[
+                    styles.studentText,
+                    { color: student.attend ? colors.attended : colors.notAttended },
+                  ]}
+                >
+                  {student.attend ? 'Present' : 'Absent'}
+                </Text>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            Статистика отсутствует
+            No statistics available
           </Text>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.accent }]}
             onPress={handleBackPress}
           >
-            <Text style={styles.backButtonText}>Вернуться</Text>
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -332,6 +359,16 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginBottom: 8,
   },
+  studentItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 8,
+  },
+  studentText: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -346,7 +383,6 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
     borderRadius: 10,
-    color: '#EF4444',
   },
   emptyContainer: {
     flex: 1,
@@ -406,6 +442,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '500',
     marginTop: 16,
-    color: '#D1D5DB',
   },
 });
