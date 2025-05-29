@@ -32,7 +32,9 @@ interface Student {
   email: string;
   phoneNumber: string;
   attend: boolean;
-  attendanceDuration: number; // Добавлено поле для времени участия
+  attendTime: string | null; // Время входа (соответствует attendTime в StudentDTO)
+  exitTime: string | null;   // Время выхода
+  attendanceDuration: number; // Время участия в минутах
 }
 
 interface AttendanceStats {
@@ -96,12 +98,23 @@ export default function StatsScreen() {
     fetchStats();
   }, [scheduleItem?.id, accessToken]);
 
-  const formatTime = (startTime: string, endTime: string) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const format = (date: Date) =>
-      `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    return `${format(start)}–${format(end)}`;
+  const formatTime = (time: string | null) => {
+    if (!time) return 'Н/Д';
+    try {
+      const date = new Date(time);
+      if (isNaN(date.getTime())) return 'Н/Д';
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    } catch (e) {
+      console.error('Ошибка форматирования времени:', e);
+      return 'Н/Д';
+    }
+  };
+
+  const formatDuration = (minutes: number) => {
+    if (minutes <= 0) return '0 мин';
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return hours > 0 ? `${hours} ч ${remainingMinutes} мин` : `${remainingMinutes} мин`;
   };
 
   const handleBackPress = () => {
@@ -194,7 +207,7 @@ export default function StatsScreen() {
               Предмет: {stats.scheduleDTO.subject}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
-              Время: {formatTime(stats.scheduleDTO.startTime, stats.scheduleDTO.endTime)}
+              Время: {formatTime(stats.scheduleDTO.startTime)}–{formatTime(stats.scheduleDTO.endTime)}
             </Text>
             <Text style={[styles.cardText, { color: colors.textSecondary }]}>
               Группа: {stats.scheduleDTO.groupName}
@@ -287,9 +300,17 @@ export default function StatsScreen() {
                   {student.attend ? 'Присутствовал' : 'Отсутствовал'}
                 </Text>
                 {student.attend && (
-                  <Text style={[styles.studentText, { color: colors.textSecondary }]}>
-                    Время участия: {student.attendanceDuration} мин
-                  </Text>
+                  <>
+                    <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                      Время входа: {formatTime(student.attendTime)}
+                    </Text>
+                    <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                      Время выхода: {student.exitTime ? formatTime(student.exitTime) : 'До конца занятия'}
+                    </Text>
+                    <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                      Время участия: {formatDuration(student.attendanceDuration)}
+                    </Text>
+                  </>
                 )}
               </View>
             ))}
