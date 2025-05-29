@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,16 +26,13 @@ interface ScheduleItem {
   groupName: string;
 }
 
-interface StudentAttendance {
-  id: number;
-  name: string;
-  attended: boolean;
-}
-
 interface AttendanceStats {
   scheduleId: number;
   subject: string;
-  students: StudentAttendance[];
+  totalCount: number;
+  presentCount: number;
+  statistic: number;
+  message: string;
 }
 
 export default function StatsScreen() {
@@ -46,6 +43,7 @@ export default function StatsScreen() {
   const accessToken = user?.accessToken;
   const [stats, setStats] = useState<AttendanceStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Парсим данные расписания
   let item: ScheduleItem | null = null;
@@ -54,75 +52,48 @@ export default function StatsScreen() {
   } catch (e) {
     console.error('Ошибка парсинга scheduleData:', e);
     setError('Некорректные данные расписания');
+    setLoading(false);
   }
 
-  const colors = {
-    background: colorScheme === 'light' ? '#1F2A44' : '#FFFFFF',
-    cardBackground: colorScheme === 'light' ? '#2D3A56' : '#E6F0FA',
-    textPrimary: colorScheme === 'light' ? '#FFFFFF' : '#111827',
-    textSecondary: colorScheme === 'light' ? '#D1D5DB' : '#6B7280',
-    error: '#EF4444',
-    accent: colorScheme === 'light' ? '#0A84FF' : '#007AFF',
-    shadow: colorScheme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-    attended: '#10B981',
-    notAttended: '#EF4444',
-  };
-
-  // Загрузка данных с сервера
   useEffect(() => {
     const fetchStats = async () => {
       if (!item || !accessToken) {
         setError('Данные пользователя или расписания отсутствуют');
+        setLoading(false);
         return;
       }
 
+      setLoading(true);
       try {
-        const response = await axios.get(`${API_BASE}api/v1/teacher/schedule/${item.id}`, {
-          headers: {
-            'Auth-token': accessToken,
-          },
-        });
+        const response = await axios.get(
+          `${API_BASE}api/v1/teacher/schedule/${item.id}`,
+          {
+            headers: {
+              'Auth-token': accessToken,
+            },
+          }
+        );
 
         const { body } = response.data;
-        const scheduleDTO = body.scheduleDTO;
-
-        // Предполагаем, что список студентов и их посещаемость нужно получать отдельно
-        // Для простоты здесь имитируем данные студентов на основе примера
-        // В реальном случае это может быть отдельный эндпоинт
-        const mockStudents: StudentAttendance[] = [
-          { id: 1, name: 'John Doe', attended: Math.random() > 0.5 },
-          { id: 2, name: 'Jane Smith', attended: Math.random() > 0.5 },
-          { id: 3, name: 'Alice Johnson', attended: Math.random() > 0.5 },
-          { id: 4, name: 'Bob Wilson', attended: Math.random() > 0.5 },
-          { id: 5, name: 'Emma Brown', attended: Math.random() > 0.5 },
-        ];
-
         setStats({
-          scheduleId: scheduleDTO.id,
-          subject: scheduleDTO.subject,
-          students: mockStudents,
+          scheduleId: item.id,
+          subject: item.subject,
+          totalCount: body.totalCount,
+          presentCount: body.presentCount,
+          statistic: body.statistic,
+          message: body.message,
         });
         setError(null);
       } catch (err) {
-        console.error('Ошибка загрузки статистики:', err);
+        console.error('Ошибка при загрузке статистики:', err);
         setError('Не удалось загрузить статистику');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchStats();
   }, [item, accessToken]);
-
-  // Рассчитываем проценты посещения
-  const attendancePercentage = stats?.students
-    ? {
-        attended: (
-          (stats.students.filter((s) => s.attended).length / stats.students.length) * 100
-        ).toFixed(1),
-        notAttended: (
-          (stats.students.filter((s) => !s.attended).length / stats.students.length) * 100
-        ).toFixed(1),
-      }
-    : { attended: '0', notAttended: '0' };
 
   const formatTime = (startTime: string, endTime: string) => {
     const start = new Date(startTime);
@@ -136,21 +107,37 @@ export default function StatsScreen() {
     router.back();
   };
 
-  const renderStudent = ({ item }: { item: StudentAttendance }) => (
-    <View style={[styles.studentRow, { backgroundColor: colors.cardBackground }]}>
-      <Text style={[styles.studentName, { color: colors.textPrimary }]}>
-        {item.name}
-      </Text>
-      <Text
-        style={[
-          styles.attendanceStatus,
-          { color: item.attended ? colors.attended : colors.notAttended },
-        ]}
-      >
-        {item.attended ? '✔' : '✘'}
-      </Text>
-    </View>
-  );
+  const attendancePercentage = stats
+    ? {
+        attended: ((stats.presentCount / stats.totalCount) * 100).toFixed(1),
+        notAttended: ((1 - stats.presentCount / stats.totalCount) * 100).toFixed(1),
+      }
+    : { attended: '0', notAttended: '0' };
+
+  const colors = {
+    background: colorScheme === 'light' ? '#1F2A44' : '#FFFFFF',
+    cardBackground: colorScheme === 'light' ? '#2D3A56' : '#E6F0FA',
+    textPrimary: colorScheme === 'light' ? '#FFFFFF' : '#111827',
+    textSecondary: colorScheme === 'light' ? '#D1D5DB' : '#6B7280',
+    error: '#EF4444',
+    accent: colorScheme === 'light' ? '#0A84FF' : '#007AFF',
+    shadow: colorScheme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)',
+    attended: '#10B981',
+    notAttended: '#EF4444',
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.textPrimary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Загрузка статистики...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!item) {
     return (
@@ -186,7 +173,9 @@ export default function StatsScreen() {
 
       {error ? (
         <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+          <Text style={[styles.errorText, { color: colors.error }]}>
+            {error}
+          </Text>
           <TouchableOpacity
             style={[styles.backButton, { backgroundColor: colors.accent }]}
             onPress={handleBackPress}
@@ -216,14 +205,20 @@ export default function StatsScreen() {
 
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
             <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              Посещаемость студентов
+              Общая статистика
             </Text>
-            <FlatList
-              data={stats.students}
-              renderItem={renderStudent}
-              keyExtractor={(student) => student.id.toString()}
-              style={styles.studentList}
-            />
+            <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+              Всего студентов: {stats.totalCount}
+            </Text>
+            <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+              Присутствует: {stats.presentCount}
+            </Text>
+            <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+              Статистика: {stats.statistic}%
+            </Text>
+            <Text style={[styles.cardText, { color: colors.textSecondary }]}>
+              Сообщение: {stats.message}
+            </Text>
           </View>
 
           <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
@@ -231,16 +226,21 @@ export default function StatsScreen() {
               Процент посещаемости
             </Text>
             <View style={styles.chartContainer}>
-              <Progress.Circle
-                size={150}
-                progress={parseFloat(attendancePercentage.attended) / 100} // Доля присутствующих
-                showsText={true}
-                color={colors.attended}
-                unfilledColor={colors.notAttended}
-                borderWidth={0}
-                thickness={10}
-                style={styles.pieChart}
-              />
+              <View style={styles.pieChartContainer}>
+                <Progress.Circle
+                  size={150}
+                  progress={parseFloat(attendancePercentage.attended) / 100}
+                  showsText={false}
+                  color={colors.attended}
+                  unfilledColor={colors.notAttended}
+                  borderWidth={0}
+                  thickness={10}
+                  style={styles.pieChart}
+                />
+                <Text style={styles.pieChartText}>
+                  {`${attendancePercentage.attended}%`}
+                </Text>
+              </View>
               <View style={styles.chartLegend}>
                 <View style={styles.legendItem}>
                   <View
@@ -265,8 +265,14 @@ export default function StatsScreen() {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            Статистика загружается...
+            Статистика отсутствует
           </Text>
+          <TouchableOpacity
+            style={[styles.backButton, { backgroundColor: colors.accent }]}
+            onPress={handleBackPress}
+          >
+            <Text style={styles.backButtonText}>Вернуться</Text>
+          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>
@@ -326,26 +332,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginBottom: 8,
   },
-  studentList: {
-    marginTop: 8,
-  },
-  studentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    marginBottom: 8,
-    borderRadius: 8,
-  },
-  studentName: {
-    fontSize: 16,
-    fontWeight: '500',
-    flex: 1,
-  },
-  attendanceStatus: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -357,6 +343,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 20,
+    padding: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 10,
+    color: '#EF4444',
   },
   emptyContainer: {
     flex: 1,
@@ -374,8 +364,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
   },
+  pieChartContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   pieChart: {
     marginBottom: 16,
+  },
+  pieChartText: {
+    position: 'absolute',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#D1D5DB',
+    textAlign: 'center',
   },
   chartLegend: {
     alignItems: 'center',
@@ -394,5 +396,16 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginTop: 16,
+    color: '#D1D5DB',
   },
 });
