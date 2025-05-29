@@ -11,7 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useColorScheme } from '../../src/hooks/useColorScheme';
 import { useAuth } from '../../src/context/AuthContext';
-import * as Progress from 'react-native-progress'; 
+import * as Progress from 'react-native-progress';
+import axios from 'axios';
+import { API_BASE } from '../api/API';
 
 interface ScheduleItem {
   id: number;
@@ -41,6 +43,7 @@ export default function StatsScreen() {
   const { user } = useAuth();
   const { scheduleData } = useLocalSearchParams();
   const router = useRouter();
+  const accessToken = user?.accessToken;
   const [stats, setStats] = useState<AttendanceStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,24 +68,49 @@ export default function StatsScreen() {
     notAttended: '#EF4444',
   };
 
-  // Устанавливаем тестовые данные
+  // Загрузка данных с сервера
   useEffect(() => {
-    if (item && user) {
-      setStats({
-        scheduleId: item.id,
-        subject: item.subject,
-        students: [
-          { id: 1, name: 'John Doe', attended: true },
-          { id: 2, name: 'Jane Smith', attended: false },
-          { id: 3, name: 'Alice Johnson', attended: true },
-          { id: 4, name: 'Bob Wilson', attended: false },
-          { id: 5, name: 'Emma Brown', attended: true },
-        ],
-      });
-    } else {
-      setError('Данные пользователя или расписания отсутствуют');
-    }
-  }, [item, user]);
+    const fetchStats = async () => {
+      if (!item || !accessToken) {
+        setError('Данные пользователя или расписания отсутствуют');
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_BASE}api/v1/teacher/schedule/${item.id}`, {
+          headers: {
+            'Auth-token': accessToken,
+          },
+        });
+
+        const { body } = response.data;
+        const scheduleDTO = body.scheduleDTO;
+
+        // Предполагаем, что список студентов и их посещаемость нужно получать отдельно
+        // Для простоты здесь имитируем данные студентов на основе примера
+        // В реальном случае это может быть отдельный эндпоинт
+        const mockStudents: StudentAttendance[] = [
+          { id: 1, name: 'John Doe', attended: Math.random() > 0.5 },
+          { id: 2, name: 'Jane Smith', attended: Math.random() > 0.5 },
+          { id: 3, name: 'Alice Johnson', attended: Math.random() > 0.5 },
+          { id: 4, name: 'Bob Wilson', attended: Math.random() > 0.5 },
+          { id: 5, name: 'Emma Brown', attended: Math.random() > 0.5 },
+        ];
+
+        setStats({
+          scheduleId: scheduleDTO.id,
+          subject: scheduleDTO.subject,
+          students: mockStudents,
+        });
+        setError(null);
+      } catch (err) {
+        console.error('Ошибка загрузки статистики:', err);
+        setError('Не удалось загрузить статистику');
+      }
+    };
+
+    fetchStats();
+  }, [item, accessToken]);
 
   // Рассчитываем проценты посещения
   const attendancePercentage = stats?.students
@@ -237,14 +265,8 @@ export default function StatsScreen() {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            Статистика отсутствует
+            Статистика загружается...
           </Text>
-          <TouchableOpacity
-            style={[styles.backButton, { backgroundColor: colors.accent }]}
-            onPress={handleBackPress}
-          >
-            <Text style={styles.backButtonText}>Вернуться</Text>
-          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>
