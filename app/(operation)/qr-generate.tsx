@@ -125,7 +125,7 @@ export default function QrGenerateScreen() {
               {qrCodeData && (
                 <Image
                   source={{ uri: qrCodeData }}
-                  style={{ width: 220, height: 220 }}
+                  style={{ width: 420, height: 420 }}
                   resizeMode="contain"
                 />
               )}

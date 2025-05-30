@@ -14,6 +14,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import * as Progress from 'react-native-progress';
 import axios from 'axios';
 import { API_BASE } from '../api/API';
+import { Ionicons } from '@expo/vector-icons'; // Added for checkmark icon
 
 interface ScheduleItem {
   id: number;
@@ -32,9 +33,9 @@ interface Student {
   email: string;
   phoneNumber: string;
   attend: boolean;
-  attendTime: string | null; // Время входа (соответствует attendTime в StudentDTO)
-  exitTime: string | null;   // Время выхода
-  attendanceDuration: number; // Время участия в минутах
+  attendTime: string | null;
+  exitTime: string | null;
+  attendanceDuration: number;
 }
 
 interface AttendanceStats {
@@ -55,8 +56,8 @@ export default function StatsScreen() {
   const [stats, setStats] = useState<AttendanceStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedStudent, setExpandedStudent] = useState<number | null>(null); // Track expanded student
 
-  // Парсинг данных расписания
   let scheduleItem: ScheduleItem | null = null;
   try {
     scheduleItem = scheduleData ? JSON.parse(scheduleData as string) : null;
@@ -77,7 +78,7 @@ export default function StatsScreen() {
       setLoading(true);
       try {
         const response = await axios.get(
-          `${API_BASE}/api/v1/teacher/schedule/${scheduleItem.id}`,
+          `${API_BASE}api/v1/teacher/schedule/${scheduleItem.id}`,
           {
             headers: {
               'Auth-token': accessToken,
@@ -119,6 +120,10 @@ export default function StatsScreen() {
 
   const handleBackPress = () => {
     router.back();
+  };
+
+  const toggleStudentDetails = (studentId: number) => {
+    setExpandedStudent(expandedStudent === studentId ? null : studentId);
   };
 
   const attendancePercentage = stats
@@ -281,38 +286,45 @@ export default function StatsScreen() {
               Список студентов
             </Text>
             {stats.studentDTO.map((student) => (
-              <View key={student.id} style={styles.studentItem}>
-                <Text style={[styles.studentText, { color: colors.textPrimary }]}>
-                  {student.name}
-                </Text>
-                <Text style={[styles.studentText, { color: colors.textSecondary }]}>
-                  {student.email}
-                </Text>
-                <Text style={[styles.studentText, { color: colors.textSecondary }]}>
-                  {student.phoneNumber}
-                </Text>
-                <Text
-                  style={[
-                    styles.studentText,
-                    { color: student.attend ? colors.attended : colors.notAttended },
-                  ]}
-                >
-                  {student.attend ? 'Присутствовал' : 'Отсутствовал'}
-                </Text>
-                {student.attend && (
-                  <>
+              <TouchableOpacity
+                key={student.id}
+                style={styles.studentItem}
+                onPress={() => toggleStudentDetails(student.id)}
+              >
+                <View style={styles.studentHeader}>
+                  <Text style={[styles.studentText, { color: colors.textPrimary }]}>
+                    {student.name}
+                  </Text>
+                  <Ionicons
+                    name={student.attend ? 'checkmark-circle' : 'close-circle'}
+                    size={24}
+                    color={student.attend ? colors.attended : colors.notAttended}
+                  />
+                </View>
+                {expandedStudent === student.id && (
+                  <View style={styles.studentDetails}>
                     <Text style={[styles.studentText, { color: colors.textSecondary }]}>
-                      Время входа: {formatTime(student.attendTime)}
+                      {student.email}
                     </Text>
                     <Text style={[styles.studentText, { color: colors.textSecondary }]}>
-                      Время выхода: {student.exitTime ? formatTime(student.exitTime) : 'До конца занятия'}
+                      {student.phoneNumber}
                     </Text>
-                    <Text style={[styles.studentText, { color: colors.textSecondary }]}>
-                      Время участия: {formatDuration(student.attendanceDuration)}
-                    </Text>
-                  </>
+                    {student.attend && (
+                      <>
+                        <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                          Время входа: {formatTime(student.attendTime)}
+                        </Text>
+                        <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                          Время выхода: {student.exitTime ? formatTime(student.exitTime) : 'До конца занятия'}
+                        </Text>
+                        <Text style={[styles.studentText, { color: colors.textSecondary }]}>
+                          Время участия: {formatDuration(student.attendanceDuration)}
+                        </Text>
+                      </>
+                    )}
+                  </View>
                 )}
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </ScrollView>
@@ -391,6 +403,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 8,
+  },
+  studentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  studentDetails: {
+    marginTop: 8,
+    paddingLeft: 10,
   },
   studentText: {
     fontSize: 14,

@@ -14,6 +14,7 @@ import { useColorScheme } from '../../src/hooks/useColorScheme';
 import { Colors } from '../../src/constants/Colors';
 import { useAuth } from '../../src/context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons'; // Импортируем иконки
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
@@ -80,12 +81,10 @@ export default function ProfileScreen() {
         </View>
 
         <View style={[styles.profileCard, { backgroundColor: colors.cardBackground }]}>
-          <Image
-            source={require('../../assets/images/icon_profile.png')}
-            style={styles.avatar}
-          />
+          {/* Заменяем Image на MaterialIcons, если это иконка профиля */}
+          <MaterialIcons name="person" size={96} color={colors.textPrimary} style={styles.avatar} />
           <Text style={[styles.title, { color: colors.textPrimary }]}>
-          Мой профиль
+            Мой профиль
           </Text>
           {user ? (
             <>
@@ -108,10 +107,7 @@ export default function ProfileScreen() {
             <Text style={[styles.optionText, { color: colors.textTertiary }]}>
               Личные данные
             </Text>
-            <Image
-              source={require('../../assets/images/ic_button_next.png')}
-              style={[styles.arrow, { tintColor: colors.textTertiary }]}
-            />
+            <MaterialIcons name="chevron-right" size={24} color={colors.textTertiary} />
           </TouchableOpacity>
 
           <View style={[styles.divider, { backgroundColor: colors.divider }]} />
@@ -120,10 +116,7 @@ export default function ProfileScreen() {
             <Text style={[styles.optionText, { color: colors.textTertiary }]}>
               Изменить пароль
             </Text>
-            <Image
-              source={require('../../assets/images/ic_button_next.png')}
-              style={[styles.arrow, { tintColor: colors.textTertiary }]}
-            />
+            <MaterialIcons name="chevron-right" size={24} color={colors.textTertiary} />
           </TouchableOpacity>
 
           <View style={[styles.divider, { backgroundColor: colors.divider }]} />
@@ -131,12 +124,9 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.option}>
             <Text style={[styles.optionText, { color: colors.textTertiary }]}>
               Язык
-            </Text>
+          </Text>
             <View style={styles.languageContainer}>
-              <Image
-                source={require('../../assets/images/ic_button_next.png')}
-                style={[styles.arrow, { tintColor: colors.textTertiary }]}
-              />
+              <MaterialIcons name="chevron-right" size={24} color={colors.textTertiary} />
             </View>
           </TouchableOpacity>
 
@@ -158,13 +148,6 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
-
-        <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: colors.exitButton }]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutButtonText}>Выйти</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

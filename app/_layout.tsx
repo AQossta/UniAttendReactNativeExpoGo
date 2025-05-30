@@ -12,7 +12,12 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+
+  // Если данные еще загружаются, не рендерим ничего
+  if (loading) {
+    return null;
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -23,7 +28,7 @@ function RootLayoutNav() {
       >
         {!isAuthenticated ? (
           <>
-            <Stack.Screen name="(main)" /> {/* Заменили index на welcome */}
+            <Stack.Screen name="(main)" />
             <Stack.Screen name="login" />
           </>
         ) : (

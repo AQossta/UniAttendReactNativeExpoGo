@@ -1,13 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Интерфейс для роли (если это объект)
+interface Role {
+  name: string;
+}
+
+// Интерфейс для пользователя
 interface User {
   id: number;
   email: string;
   name: string;
   phoneNumber: string;
   dateOfBirth: string;
-  roles: string[];
+  roles: (string | Role)[]; // Поддержка строк или объектов с name
   groupId: number;
   groupName: string;
   accessToken: string;
@@ -16,6 +22,7 @@ interface User {
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
+  loading: boolean;
   setIsAuthenticated: (value: boolean) => Promise<void>;
   setUser: (user: User | null) => Promise<void>;
 }
@@ -25,18 +32,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticatedState] = useState(false);
   const [user, setUserState] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setLoading(true);
         const auth = await AsyncStorage.getItem('isAuthenticated');
         const storedUser = await AsyncStorage.getItem('user');
-        setIsAuthenticatedState(auth === 'true');
+
+        if (auth === 'true') {
+          setIsAuthenticatedState(true);
+        }
+
         if (storedUser) {
-          setUserState(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          console.log('Loaded user from AsyncStorage:', parsedUser);
+          setUserState(parsedUser);
         }
       } catch (error) {
         console.error('Error loading auth state:', error);
+      } finally {
+        setLoading(false);
       }
     };
     checkAuth();
@@ -47,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem('isAuthenticated', value.toString());
       setIsAuthenticatedState(value);
       if (!value) {
-        // Clear user data on logout
         await AsyncStorage.removeItem('user');
         await AsyncStorage.removeItem('accessToken');
         setUserState(null);
@@ -60,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setUser = async (user: User | null) => {
     try {
       if (user) {
+        console.log('Saving user to AsyncStorage:', user);
         await AsyncStorage.setItem('user', JSON.stringify(user));
       } else {
         await AsyncStorage.removeItem('user');
@@ -71,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, setIsAuthenticated, setUser }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, loading, setIsAuthenticated, setUser }}>
       {children}
     </AuthContext.Provider>
   );
