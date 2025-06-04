@@ -131,7 +131,7 @@ export default function ScheduleScreen() {
     try {
       router.push({
         pathname: '/(operation)/stats',
-        params: { scheduleData: JSON.stringify(item) }, // Передаем полные данные
+        params: { scheduleData: JSON.stringify(item) }, 
       });
     } catch (error) {
       console.error('Ошибка навигации к статистике:', error);

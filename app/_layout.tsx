@@ -35,6 +35,8 @@ function RootLayoutNav() {
           <>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="(operation)" />
+            <Stack.Screen name="(student-tabs)" />
+            <Stack.Screen name="(teacher-tabs)" />
           </>
         )}
         <Stack.Screen name="+not-found" />

@@ -4,7 +4,6 @@ import { Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { HapticTab } from '../../components/HapticTab';
 import TabBarBackground from '../../components/ui/TabBarBackground';
-import { Colors } from '../../src/constants/Colors';
 import { useColorScheme } from '../../src/hooks/useColorScheme';
 import { useAuth } from '../../src/context/AuthContext';
 
@@ -30,24 +29,24 @@ export default function TabsLayout() {
 
   const isStudent = Array.isArray(user.roles) && user.roles.length > 0
     ? user.roles.some(role => {
-        if (typeof role === 'string') {
-          return role.toLowerCase() === 'student';
-        } else if (role && 'name' in role) {
-          return role.name.toLowerCase() === 'student';
-        }
-        return false;
-      })
+      if (typeof role === 'string') {
+        return role.toLowerCase() === 'student';
+      } else if (role && 'name' in role) {
+        return role.name.toLowerCase() === 'student';
+      }
+      return false;
+    })
     : false;
 
   const isTeacher = Array.isArray(user.roles) && user.roles.length > 0
     ? user.roles.some(role => {
-        if (typeof role === 'string') {
-          return role.toLowerCase() === 'teacher';
-        } else if (role && 'name' in role) {
-          return role.name.toLowerCase() === 'teacher';
-        }
-        return false;
-      })
+      if (typeof role === 'string') {
+        return role.toLowerCase() === 'teacher';
+      } else if (role && 'name' in role) {
+        return role.name.toLowerCase() === 'teacher';
+      }
+      return false;
+    })
     : false;
 
   console.log('isStudent:', isStudent, 'isTeacher:', isTeacher);
@@ -90,16 +89,28 @@ export default function TabsLayout() {
         }}
       />
       {isTeacher && (
-        <Tabs.Screen
-          name="(teacher-tabs)/create_schedule"
-          options={{
-            title: 'Schedule',
-            tabBarIcon: ({ color }) => (
-              <MaterialIcons name="event" size={24} color={color} />
-            ),
-          }}
-        />
+        <>
+          <Tabs.Screen
+            name="(teacher-tabs)/create_schedule"
+            options={{
+              title: 'Расписание',
+              tabBarIcon: ({ color }) => (
+                <MaterialIcons name="event" size={24} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="/(teacher-tabs)/journal-entry"
+            options={{
+              title: 'Дневник',
+              tabBarIcon: ({ color }) => (
+                <MaterialIcons name="event" size={24} color={color} />
+              ),
+            }}
+          />
+        </>
       )}
+
       {isStudent && (
         <Tabs.Screen
           name="(student-tabs)/qr-scan"
